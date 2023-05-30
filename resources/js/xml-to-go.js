@@ -35,17 +35,6 @@ function xmlToJson(xmlString) {
 	return obj;
   }
   
-  // Example usage
-  var xmlString = '<root><name>John Doe</name><age>25</age></root>';
-  var jsonObj = xmlToJson(xmlString);
-  console.log(jsonObj);
-  
-
-
-
-
-
-
 function jsonToGo(json, typename, flatten = true, example = false, allOmitempty = false) {
 	let data;
 	let scope;
