@@ -8,6 +8,14 @@ function xmlToJson(xmlString) {
   
   function convertNodeToJson(node) {
 	var obj = {};
+	 if (node.attributes.length > 0) {
+		obj["@attributes"] = {};
+		for (var i = 0; i < node.attributes.length; i++) {
+		  var attribute = node.attributes[i];
+		  obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+		}
+	  }
+  
   
 	if (node.nodeType === Node.ELEMENT_NODE) {
 	  if (node.hasChildNodes()) {
