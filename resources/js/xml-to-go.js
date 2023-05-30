@@ -1,14 +1,3 @@
-/*
-	JSON-to-Go
-	by Matt Holt
-
-	https://github.com/mholt/json-to-go
-
-	A simple utility to translate JSON into a Go type definition.
-*/
-
-
-
 function xmlToJson(xmlString) {
 	var parser = new DOMParser();
 	var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
