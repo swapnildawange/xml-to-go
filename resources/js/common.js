@@ -25,11 +25,9 @@ $(function () {
 			return;
 		}
 
-		var xml2json = new XMLtoJSON()
-		input = xml2json.fromStr(input)
-		console.log(input)
+		 var json = xmlToJson(input);
 
-		let output = jsonToGo(JSON.stringify(input), "", !$('#inline').is(':checked'), false, $('#omitempty').is(':checked'));
+		let output = jsonToGo(JSON.stringify(json), "", !$('#inline').is(':checked'), false, $('#omitempty').is(':checked'));
 
 		if (output.error) {
 			$('#output').html('<span class="clr-red">' + output.error + '</span>');

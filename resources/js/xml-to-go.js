@@ -9,92 +9,55 @@
 
 
 
-// Converts XML to JSON
-// from: https://coursesweb.net/javascript/convert-xml-json-javascript_s2
-function XMLtoJSON() {
-	var me = this;      // stores the object instantce
+function xmlToJson(xmlString) {
+	var parser = new DOMParser();
+	var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+	var rootNode = xmlDoc.documentElement;
+	
+	return convertNodeToJson(rootNode);
+  }
   
-	// gets the content of an xml file and returns it in 
-	me.fromFile = function(xml, rstr) {
-	  // Cretes a instantce of XMLHttpRequest object
-	  var xhttp = (window.XMLHttpRequest) ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-	  // sets and sends the request for calling "xml"
-	  xhttp.open("GET", xml ,false);
-	  xhttp.send(null);
+  function convertNodeToJson(node) {
+	var obj = {};
   
-	  // gets the JSON string
-	  var json_str = jsontoStr(setJsonObj(xhttp.responseXML));
+	if (node.nodeType === Node.ELEMENT_NODE) {
+	  if (node.hasChildNodes()) {
+		for (var i = 0; i < node.childNodes.length; i++) {
+		  var child = node.childNodes[i];
   
-	  // sets and returns the JSON object, if "rstr" undefined (not passed), else, returns JSON string
-	  return (typeof(rstr) == 'undefined') ? JSON.parse(json_str) : json_str;
-	}
-  
-	// returns XML DOM from string with xml content
-	me.fromStr = function(xml, rstr) {
-	  // for non IE browsers
-	  if(window.DOMParser) {
-		var getxml = new DOMParser();
-		var xmlDoc = getxml.parseFromString(xml,"text/xml");
-	  }
-	  else {
-		// for Internet Explorer
-		var xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
-		xmlDoc.async = "false";
-	  }
-  
-	  // gets the JSON string
-	  var json_str = jsontoStr(setJsonObj(xmlDoc));
-  
-	  // sets and returns the JSON object, if "rstr" undefined (not passed), else, returns JSON string
-	  return (typeof(rstr) == 'undefined') ? JSON.parse(json_str) : json_str;
-	}
-  
-	// receives XML DOM object, returns converted JSON object
-	var setJsonObj = function(xml) {
-	  var js_obj = {};
-	  if (xml.nodeType == 1) {
-		if (xml.attributes.length > 0) {
-		  js_obj["@attributes"] = {};
-		  for (var j = 0; j < xml.attributes.length; j++) {
-			var attribute = xml.attributes.item(j);
-			js_obj["@attributes"][attribute.nodeName] = attribute.value;
-		  }
-		}
-	  } else if (xml.nodeType == 3) {
-		js_obj = xml.nodeValue;
-	  }            
-	  if (xml.hasChildNodes()) {
-		for (var i = 0; i < xml.childNodes.length; i++) {
-		  var item = xml.childNodes.item(i);
-		  var nodeName = item.nodeName;
-		  if (typeof(js_obj[nodeName]) == "undefined") {
-			js_obj[nodeName] = setJsonObj(item);
-		  } else {
-			if (typeof(js_obj[nodeName].push) == "undefined") {
-			  var old = js_obj[nodeName];
-			  js_obj[nodeName] = [];
-			  js_obj[nodeName].push(old);
+		  if (child.nodeType === Node.ELEMENT_NODE) {
+			if (child.hasChildNodes()) {
+			  if (child.childNodes.length === 1 && child.firstChild.nodeType === Node.TEXT_NODE) {
+				obj[child.nodeName] = child.firstChild.nodeValue;
+			  } else {
+				if (typeof obj[child.nodeName] === 'undefined') {
+				  obj[child.nodeName] = [];
+				}
+				obj[child.nodeName].push(convertNodeToJson(child));
+			  }
+			} else {
+			  obj[child.nodeName] = null;
 			}
-			js_obj[nodeName].push(setJsonObj(item));
 		  }
 		}
 	  }
-	  return js_obj;
 	}
+	
+	return obj;
+  }
   
-	// converts JSON object to string (human readablle).
-	// Removes '\t\r\n', rows with multiples '""', multiple empty rows, '  "",', and "  ",; replace empty [] with ""
-	var jsontoStr = function(js_obj) {
-
-	  var rejsn = JSON.stringify(js_obj, undefined, 2).replace(/(\\t|\\r|\\n)/g, '').replace(/"",[\n\t\r\s]+""[,]*/g, '').replace(/(\n[\t\s\r]*\n)/g, '').replace(/[\s\t]{2,}""[,]{0,1}/g, '').replace(/"[\s\t]{1,}"[,]{0,1}/g, '').replace(/\[[\t\s]*\]/g, '""');
-	  return (rejsn.indexOf('"parsererror": {') == -1) ? rejsn : 'Invalid XML format';
-	}
-  };
+  // Example usage
+  var xmlString = '<root><name>John Doe</name><age>25</age></root>';
+  var jsonObj = xmlToJson(xmlString);
+  console.log(jsonObj);
   
- 
 
-function jsonToGo(json, typename, flatten = true, example = false, allOmitempty = false)
-{
+
+
+
+
+
+function jsonToGo(json, typename, flatten = true, example = false, allOmitempty = false) {
 	let data;
 	let scope;
 	let go = "";
@@ -106,13 +69,11 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 	let innerTabs = 0;
 	let parent = "";
 
-	try
-	{
+	try {
 		data = JSON.parse(json.replace(/(:\s*\[?\s*-?\d*)\.0/g, "$1.1")); // hack that forces floats to stay as floats
 		scope = data;
 	}
-	catch (e)
-	{
+	catch (e) {
 		return {
 			go: "",
 			error: e.message
@@ -131,22 +92,17 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 	};
 
 
-	function parseScope(scope, depth = 0)
-	{
-		if (typeof scope === "object" && scope !== null)
-		{
-			if (Array.isArray(scope))
-			{
+	function parseScope(scope, depth = 0) {
+		if (typeof scope === "object" && scope !== null) {
+			if (Array.isArray(scope)) {
 				let sliceType;
 				const scopeLength = scope.length;
 
-				for (let i = 0; i < scopeLength; i++)
-				{
+				for (let i = 0; i < scopeLength; i++) {
 					const thisType = goType(scope[i]);
 					if (!sliceType)
 						sliceType = thisType;
-					else if (sliceType != thisType)
-					{
+					else if (sliceType != thisType) {
 						sliceType = mostSpecificPossibleGoType(thisType, sliceType);
 						if (sliceType == "any")
 							break;
@@ -165,11 +121,9 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 					const allFields = {};
 
 					// for each field counts how many times appears
-					for (let i = 0; i < scopeLength; i++)
-					{
+					for (let i = 0; i < scopeLength; i++) {
 						const keys = Object.keys(scope[i])
-						for (let k in keys)
-						{
+						for (let k in keys) {
 							let keyname = keys[k];
 							if (!(keyname in allFields)) {
 								allFields[keyname] = {
@@ -202,8 +156,7 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 					// create a common struct with all fields found in the current array
 					// omitempty dict indicates if a field is optional
 					const keys = Object.keys(allFields), struct = {}, omitempty = {};
-					for (let k in keys)
-					{
+					for (let k in keys) {
 						const keyname = keys[k], elem = allFields[keyname];
 
 						struct[keyname] = elem.value;
@@ -222,10 +175,9 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 					}
 				}
 			}
-			else
-			{
+			else {
 				if (flatten) {
-					if (depth >= 2){
+					if (depth >= 2) {
 						appender(parent)
 					}
 					else {
@@ -236,7 +188,7 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 			}
 		}
 		else {
-			if (flatten && depth >= 2){
+			if (flatten && depth >= 2) {
 				appender(goType(scope));
 			}
 			else {
@@ -245,20 +197,18 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 		}
 	}
 
-	function parseStruct(depth, innerTabs, scope, omitempty)
-	{
+	function parseStruct(depth, innerTabs, scope, omitempty) {
 		if (flatten) {
 			stack.push(
 				depth >= 2
-				? "\n"
-				: ""
+					? "\n"
+					: ""
 			)
 		}
 
 		const seenTypeNames = [];
 
-		if (flatten && depth >= 2)
-		{
+		if (flatten && depth >= 2) {
 			const parentType = `type ${parent}`;
 			const scopeKeys = formatScopeKeys(Object.keys(scope));
 
@@ -274,19 +224,17 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 			appender(`${parentType} struct {\n`);
 			++innerTabs;
 			const keys = Object.keys(scope);
-			for (let i in keys)
-			{
+			for (let i in keys) {
 				const keyname = getOriginalName(keys[i]);
 				indenter(innerTabs)
 				const typename = uniqueTypeName(format(keyname), seenTypeNames)
 				seenTypeNames.push(typename)
 
-				appender(typename+" ");
+				appender(typename + " ");
 				parent = typename
 				parseScope(scope[keys[i]], depth);
-				appender(' `json:"'+keyname);
-				if (allOmitempty || (omitempty && omitempty[keys[i]] === true))
-				{
+				appender(' `json:"' + keyname);
+				if (allOmitempty || (omitempty && omitempty[keys[i]] === true)) {
 					appender(',omitempty');
 				}
 				appender('"`\n');
@@ -294,28 +242,24 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 			indenter(--innerTabs);
 			appender("}");
 		}
-		else
-		{
+		else {
 			append("struct {\n");
 			++tabs;
 			const keys = Object.keys(scope);
-			for (let i in keys)
-			{
+			for (let i in keys) {
 				const keyname = getOriginalName(keys[i]);
 				indent(tabs);
 				const typename = uniqueTypeName(format(keyname), seenTypeNames)
 				seenTypeNames.push(typename)
-				append(typename+" ");
+				append(typename + " ");
 				parent = typename
 				parseScope(scope[keys[i]], depth);
-				append(' `json:"'+keyname);
-				if (allOmitempty || (omitempty && omitempty[keys[i]] === true))
-				{
+				append(' `json:"' + keyname);
+				if (allOmitempty || (omitempty && omitempty[keys[i]] === true)) {
 					append(',omitempty');
 				}
-				if (example && scope[keys[i]] !== "" && typeof scope[keys[i]] !== "object")
-				{
-					append('" example:"'+scope[keys[i]])
+				if (example && scope[keys[i]] !== "" && typeof scope[keys[i]] !== "object") {
+					append('" example:"' + scope[keys[i]])
 				}
 				append('"`\n');
 			}
@@ -326,25 +270,21 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 			accumulator += stack.pop();
 	}
 
-	function indent(tabs)
-	{
+	function indent(tabs) {
 		for (let i = 0; i < tabs; i++)
 			go += '\t';
 	}
 
-	function append(str)
-	{
+	function append(str) {
 		go += str;
 	}
 
-	function indenter(tabs)
-	{
+	function indenter(tabs) {
 		for (let i = 0; i < tabs; i++)
 			stack[stack.length - 1] += '\t';
 	}
 
-	function appender(str)
-	{
+	function appender(str) {
 		stack[stack.length - 1] += str;
 	}
 
@@ -367,8 +307,7 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 	}
 
 	// Sanitizes and formats a string to make an appropriate identifier in Go
-	function format(str)
-	{
+	function format(str) {
 		str = formatNumber(str);
 
 		let sanitized = toProperCase(str).replace(/[^a-z0-9]/ig, "")
@@ -387,11 +326,12 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 			return "";
 		else if (str.match(/^\d+$/))
 			str = "Num" + str;
-		else if (str.charAt(0).match(/\d/))
-		{
-			const numbers = {'0': "Zero_", '1': "One_", '2': "Two_", '3': "Three_",
+		else if (str.charAt(0).match(/\d/)) {
+			const numbers = {
+				'0': "Zero_", '1': "One_", '2': "Two_", '3': "Three_",
 				'4': "Four_", '5': "Five_", '6': "Six_", '7': "Seven_",
-				'8': "Eight_", '9': "Nine_"};
+				'8': "Eight_", '9': "Nine_"
+			};
 			str = numbers[str.charAt(0)] + str.substr(1);
 		}
 
@@ -399,21 +339,18 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 	}
 
 	// Determines the most appropriate Go type
-	function goType(val)
-	{
+	function goType(val) {
 		if (val === null)
 			return "any";
 
-		switch (typeof val)
-		{
+		switch (typeof val) {
 			case "string":
 				if (/\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d|Z)/.test(val))
 					return "time.Time";
 				else
 					return "string";
 			case "number":
-				if (val % 1 === 0)
-				{
+				if (val % 1 === 0) {
 					if (val > -2147483648 && val < 2147483647)
 						return "int";
 					else
@@ -433,21 +370,19 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 	}
 
 	// Given two types, returns the more specific of the two
-	function mostSpecificPossibleGoType(typ1, typ2)
-	{
+	function mostSpecificPossibleGoType(typ1, typ2) {
 		if (typ1.substr(0, 5) == "float"
-				&& typ2.substr(0, 3) == "int")
+			&& typ2.substr(0, 3) == "int")
 			return typ1;
 		else if (typ1.substr(0, 3) == "int"
-				&& typ2.substr(0, 5) == "float")
+			&& typ2.substr(0, 5) == "float")
 			return typ2;
 		else
 			return "any";
 	}
 
 	// Proper cases a string according to Go conventions
-	function toProperCase(str)
-	{
+	function toProperCase(str) {
 		// ensure that the SCREAMING_SNAKE_CASE is converted to snake_case
 		if (str.match(/^[_A-Z0-9]+$/)) {
 			str = str.toLowerCase();
@@ -461,14 +396,12 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 			"URI", "URL", "UTF8", "VM", "XML", "XMPP", "XSRF", "XSS"
 		];
 
-		return str.replace(/(^|[^a-zA-Z])([a-z]+)/g, function(unused, sep, frag)
-		{
+		return str.replace(/(^|[^a-zA-Z])([a-z]+)/g, function (unused, sep, frag) {
 			if (commonInitialisms.indexOf(frag.toUpperCase()) >= 0)
 				return sep + frag.toUpperCase();
 			else
 				return sep + frag[0].toUpperCase() + frag.substr(1).toLowerCase();
-		}).replace(/([A-Z])([a-z]+)/g, function(unused, sep, frag)
-		{
+		}).replace(/([A-Z])([a-z]+)/g, function (unused, sep, frag) {
 			if (commonInitialisms.indexOf(sep + frag.toUpperCase()) >= 0)
 				return (sep + frag).toUpperCase();
 			else
@@ -477,9 +410,9 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 	}
 
 	function uuidv4() {
-		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-		  var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-		  return v.toString(16);
+		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+			var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+			return v.toString(16);
 		});
 	}
 
@@ -530,25 +463,25 @@ function jsonToGo(json, typename, flatten = true, example = false, allOmitempty 
 }
 
 if (typeof module != 'undefined') {
-    if (!module.parent) {
-        if (process.argv.length > 2 && process.argv[2] === '-big') {
-            bufs = []
-            process.stdin.on('data', function(buf) {
-                bufs.push(buf)
-            })
-            process.stdin.on('end', function() {
-                const json = Buffer.concat(bufs).toString('utf8')
-                console.log(jsonToGo(json).go)
-            })
-        } else {
-            process.stdin.on('data', function(buf) {
-                const json = buf.toString('utf8')
-				 // creates object instantce of XMLtoJSON
-                console.log(jsonToGo(json).go)
-            })
-        }
-    } else {
-        module.exports = jsonToGo
-    }
+	if (!module.parent) {
+		if (process.argv.length > 2 && process.argv[2] === '-big') {
+			bufs = []
+			process.stdin.on('data', function (buf) {
+				bufs.push(buf)
+			})
+			process.stdin.on('end', function () {
+				const json = Buffer.concat(bufs).toString('utf8')
+				console.log(jsonToGo(json).go)
+			})
+		} else {
+			process.stdin.on('data', function (buf) {
+				const json = buf.toString('utf8')
+				// creates object instantce of XMLtoJSON
+				console.log(jsonToGo(json).go)
+			})
+		}
+	} else {
+		module.exports = jsonToGo
+	}
 }
 
